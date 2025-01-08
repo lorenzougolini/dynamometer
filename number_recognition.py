@@ -2,6 +2,7 @@ from imutils.perspective import four_point_transform
 from imutils import contours
 import imutils
 import cv2
+import random
 
 DIGITS_PATTERNS = {
     (1, 1, 1, 0, 1, 1, 1): 0,
@@ -16,7 +17,14 @@ DIGITS_PATTERNS = {
 	(1, 1, 1, 1, 0, 1, 1): 9
 }
 
-img = cv2.imread('numbers.png')
+# img = cv2.imread('numbers2.png')
+vidcap = cv2.VideoCapture("dyn_video4.mp4")
+totalFrames = vidcap.get(cv2.CAP_PROP_FRAME_COUNT)
+randomFrameNumber = random.randint(0, int(totalFrames))
+vidcap.set(cv2.CAP_PROP_POS_FRAMES,randomFrameNumber)
+success, image = vidcap.read()
+if success:
+    img = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
 
 img = imutils.resize(img, height=500)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -66,7 +74,7 @@ digitsCnts = []
 for c in cnts:
     (x,y,w,h) = cv2.boundingRect(c)
 
-    if (w >= 50 and w <= 65) and (h >= 120 and h <= 150):
+    if (w >= 35 and w <= 45) and (h >= 80 and h <= 90):
         digitsCnts.append(c)
 
 print(f"found digits: {len(digitsCnts)}")
@@ -75,9 +83,9 @@ contour_image = cropped.copy()
 for c in digitsCnts:
     (x, y, w, h) = cv2.boundingRect(c)
 
-
     cv2.drawContours(contour_image, [c], -1, (0, 255, 0), 2) 
     cv2.rectangle(contour_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
 cv2.imshow("Contour Viewer", contour_image)
 
 cv2.waitKey(0)
