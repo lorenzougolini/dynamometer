@@ -103,7 +103,6 @@ def find_LCD_roi(img):
     cnts = imutils.grab_contours(cnts)
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
 
-    found = False
     for c in cnts:
         rect = cv2.minAreaRect(c)
         (center_x, center_y), (width, height), angle = rect
@@ -116,16 +115,17 @@ def find_LCD_roi(img):
         # Find screen
         if rect_area > 14000:
             if (100 < center_x < 160 and 270 < center_y < 300) and (150 < width < 160 and 90 < height < 100):
-                # print("Screen found.\n")
+                # print("Screen found")
                 return reorder_box_points(box), True
-    return None, found
+    # print("Screen not found")
+    return None, False
 
 def cut_LCD_roi(img, box):
     width = int(np.linalg.norm(box[0] - box[1]))
     height = int(np.linalg.norm(box[0] - box[3]))
     dst = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype=np.float32)
     M = cv2.getPerspectiveTransform(box, dst)
-    cropped = imutils.resize(cv2.warpPerspective(img, M, (width, height)), height=145)
+    cropped = imutils.resize(cv2.warpPerspective(img, M, (width, height)), height=300)
 
     # cv2.imshow('Cropped Box', cropped)
     # cv2.waitKey(0)
@@ -133,11 +133,13 @@ def cut_LCD_roi(img, box):
 
 
 def extract_nums(roi):
-    thresh = cv2.threshold(roi, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-    # cv2.imshow("Thresholded", thresh)
+    new_roi = cv2.GaussianBlur(roi, (7,7), 5)
+    for i in range(2):
+        new_roi = cv2.GaussianBlur(new_roi, (7,7), 5)
+    thresh = cv2.threshold(new_roi, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1,5))
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-
+    # cv2.imshow("Thresholded", thresh)
     
     cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
@@ -173,7 +175,7 @@ def extract_nums(roi):
 
     for c in cnts:
         (x,y,w,h) = cv2.boundingRect(c)
-        if w <= 45 and (h >= 30 and h <= 90):
+        if 10 <= w <= 85 and 65 <= h <= 170:
             digitsCnts.append(c)
 
 # print(f"found digits: {len(digitsCnts)}")
@@ -205,7 +207,7 @@ def extract_nums(roi):
         if w < 30:
             digits.append(1)
             continue
-        if h < 60:
+        if h < 85:
             digits.append(0)
             continue
         im_roi = roi[y:y+h, x:x+w]
@@ -242,16 +244,17 @@ def extract_nums(roi):
             avg_intensity_seg = cv2.mean(segROI)[0]
             avg_intensity_seg_center = cv2.mean(segCenterROI)[0]
             avg_intensity = np.floor(np.mean([avg_intensity_seg, avg_intensity_seg_center]))
+
+            # segment_display = im_roi.copy()
+            # cv2.rectangle(segment_display, (xA, yA), (xB, yB), (255, 0, 0), 2)  # Blue box for the segment
+            # cv2.rectangle(segment_display, (startX, startY), (endX, endY), (0, 0, 255), 2)  # Red box for the center
+            # cv2.imshow(f"Segment", segment_display)
             # print(f"Segment {i}, Avg Intensity: {avg_intensity}")
+            # key = cv2.waitKey(0)
         
             threshold = 110
             if avg_intensity <= threshold:
                 on[i] = 1
-
-            # cv2.rectangle(im_roi, (xA, yA), (xB, yB), 255, 1)
-            # cv2.imshow("Segment ROI", test_im)
-            # cv2.waitKey(0)
-            # cv2.destroyWindow("Segment ROI")
     
         # print(on)
     # cv2.waitKey(0)
@@ -262,9 +265,9 @@ def extract_nums(roi):
     # cv2.rectangle(cropped, (x,y), (x+w, y+h), (0, 255, 0), 1)
     # cv2.putText(cropped, str(digit), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0,255,0), 2)
 
-    # print(f"{digits[0]}.{digits[1:]}")
+    print(f"{digits[0]}.{''.join(list(map(str,digits[1:])))}")
     # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    # cv2.destroyWindow("Merged Boxes")
     return digits, True
 
 
@@ -284,7 +287,7 @@ def extract_nums(roi):
 
 if __name__ == "__main__":
 
-    cap = cv2.VideoCapture("dyn_video5.mp4")
+    cap = cv2.VideoCapture("dyn_video3.mp4")
 
     # select ROI
     # f = random.randint(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
@@ -321,11 +324,11 @@ if __name__ == "__main__":
         cv2.imshow('Frame', img)
 
         roi_box, found = find_LCD_roi(img)
-        if not found:
-            screen = cut_LCD_roi(img, prev_roi_box)
-        else:
-            prev_roi_box = roi_box
+        if found:
             screen = cut_LCD_roi(img, roi_box)
+            prev_roi_box = roi_box
+        else:
+            screen = cut_LCD_roi(img, prev_roi_box)
         
         n, found = extract_nums(screen)
         if found:
@@ -333,18 +336,18 @@ if __name__ == "__main__":
         number = float(f"{prev_record[0]}.{''.join(list(map(str,prev_record[1:])))}")
         records[time.time()-start_time] = number   
 
-        # while True:
-        #     key = cv2.waitKey(0) & 0xFF
-        #     if key == ord('c'):
-        #         break  # Continue to the next frame
-        #     elif key == ord('q'):
-        #         cap.release()
-        #         cv2.destroyAllWindows()
-        #         exit()  # Exit the program
+        while True:
+            key = cv2.waitKey(0) & 0xFF
+            if key == ord('c'):
+                break  # Continue to the next frame
+            elif key == ord('q'):
+                cap.release()
+                cv2.destroyAllWindows()
+                exit()  # Exit the program
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
+        # key = cv2.waitKey(1) & 0xFF
+        # if key == ord('q'):
+        #     break
     
     with open("datafile.csv", "w", newline="") as f:
         w = csv.DictWriter(f, records.keys())
