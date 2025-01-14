@@ -13,6 +13,7 @@ with open("datafile.csv", "r") as f:
             time_values.append(float(time_str))
             force_values.append(float(value_str))
 
+
 # Plot the data
 plt.figure(figsize=(10, 6))
 plt.plot(time_values, force_values, marker='x', linestyle='-', color='r', label="Recorded Data")

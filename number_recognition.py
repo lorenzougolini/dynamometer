@@ -11,7 +11,7 @@ import csv
 DIGITS_PATTERNS = {
     (1, 1, 1, 0, 1, 1, 1): 0,
 	(0, 0, 1, 0, 0, 1, 0): 1,
-	(1, 0, 1, 1, 1, 1, 0): 2,
+	(1, 0, 1, 1, 1, 0, 1): 2,
 	(1, 0, 1, 1, 0, 1, 1): 3,
 	(0, 1, 1, 1, 0, 1, 0): 4,
 	(1, 1, 0, 1, 0, 1, 1): 5,
@@ -127,9 +127,24 @@ def cut_LCD_roi(img, box):
     M = cv2.getPerspectiveTransform(box, dst)
     cropped = imutils.resize(cv2.warpPerspective(img, M, (width, height)), height=300)
 
-    # cv2.imshow('Cropped Box', cropped)
+    cv2.imshow('Cropped Box', cropped)
     # cv2.waitKey(0)
     return cropped
+
+def enlarge_roi_box(roi_box, scale=1.1):
+    """
+    Enlarges the ROI box (list of four points) by a given scale factor.
+    Args:
+        roi_box (list): A list of four points [(x1, y1), (x2, y2), (x3, y3), (x4, y4)].
+        scale (float): The scale factor by which to enlarge the box (default is 1.1).
+    Returns:
+        list: The enlarged ROI box as a list of four points [(x1, y1), ...].
+    """
+    center = np.mean(roi_box, axis=0)  # Compute the center of the box
+    enlarged_box = [
+        tuple((point - center) * scale + center) for point in roi_box
+    ]
+    return np.array([(int(x), int(y)) for x, y in enlarged_box], dtype=np.float32)
 
 
 def extract_nums(roi):
@@ -252,22 +267,26 @@ def extract_nums(roi):
             # print(f"Segment {i}, Avg Intensity: {avg_intensity}")
             # key = cv2.waitKey(0)
         
-            threshold = 110
-            if avg_intensity <= threshold:
+            threshold = 95
+            if avg_intensity < threshold:
                 on[i] = 1
-    
+        # print(f"{on}")
+
         # print(on)
     # cv2.waitKey(0)
     # cv2.destroyWindow("Digit ROI")
 
         digit = find_most_similar(tuple(on), DIGITS_PATTERNS)
         digits.append(digit)
+    
     # cv2.rectangle(cropped, (x,y), (x+w, y+h), (0, 255, 0), 1)
     # cv2.putText(cropped, str(digit), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0,255,0), 2)
 
-    print(f"{digits[0]}.{''.join(list(map(str,digits[1:])))}")
+    # print(f"{digits[0]}.{''.join(list(map(str,digits[1:])))}")
     # cv2.waitKey(0)
     # cv2.destroyWindow("Merged Boxes")
+    if len(digits) < 3:
+        return None, False
     return digits, True
 
 
@@ -287,23 +306,13 @@ def extract_nums(roi):
 
 if __name__ == "__main__":
 
-    cap = cv2.VideoCapture("dyn_video3.mp4")
+    cap = cv2.VideoCapture("dyn_video5.mp4")
 
-    # select ROI
     # f = random.randint(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
     # cap.set(cv2.CAP_PROP_POS_FRAMES, f)
     # print(f"Frame {f}") 47
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     succ, img = cap.read()
-
-    # cv2.imshow("Frame selected", img)
-    # cv2.waitKey(0)
-    # cv2.destroyWindow("Frame selected")
-    # if succ:
-    #     # img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
-    #     img = imutils.resize(img, height=700)
-    #     r = cv2.selectROI("Select the LCD area", img)
-    #     cv2.destroyWindow("Select the LCD area")
     
     # video loop
     start_time = time.time()
@@ -323,31 +332,34 @@ if __name__ == "__main__":
         img = imutils.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), height=500)
         cv2.imshow('Frame', img)
 
-        roi_box, found = find_LCD_roi(img)
-        if found:
+        roi_box, screen_found = find_LCD_roi(img)
+        if screen_found:
             screen = cut_LCD_roi(img, roi_box)
             prev_roi_box = roi_box
         else:
             screen = cut_LCD_roi(img, prev_roi_box)
         
-        n, found = extract_nums(screen)
-        if found:
+        n, number_found = extract_nums(screen)
+        if number_found:
             prev_record = n
         number = float(f"{prev_record[0]}.{''.join(list(map(str,prev_record[1:])))}")
-        records[time.time()-start_time] = number   
+        t = time.time()-start_time
+        records[t] = number   
+        # print(f"Frame: {cap.get(cv2.CAP_PROP_POS_FRAMES)}, Number: {number}")
+        # print(f"Frame: {int(cap.get(cv2.CAP_PROP_POS_FRAMES))}, Time: {t%.2}, Number: {number}")
 
-        while True:
-            key = cv2.waitKey(0) & 0xFF
-            if key == ord('c'):
-                break  # Continue to the next frame
-            elif key == ord('q'):
-                cap.release()
-                cv2.destroyAllWindows()
-                exit()  # Exit the program
+        # while True:
+        #     key = cv2.waitKey(0) & 0xFF
+        #     if key == ord('c'):
+        #         break  # Continue to the next frame
+        #     elif key == ord('q'):
+        #         cap.release()
+        #         cv2.destroyAllWindows()
+        #         exit()  # Exit the program
 
-        # key = cv2.waitKey(1) & 0xFF
-        # if key == ord('q'):
-        #     break
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
     
     with open("datafile.csv", "w", newline="") as f:
         w = csv.DictWriter(f, records.keys())
