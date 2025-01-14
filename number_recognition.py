@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import csv
-import argparse
+from data_visualization import plot_data
 
 DIGITS_PATTERNS = {
     (1, 1, 1, 0, 1, 1, 1): 0,
@@ -291,47 +291,8 @@ def extract_nums(roi):
     return digits, True
 
 
-# img = cv2.imread('image.png')
-# vidcap = cv2.VideoCapture("dyn_video4.mp4")
-# totalFrames = vidcap.get(cv2.CAP_PROP_FRAME_COUNT)
-# randomFrameNumber = random.randint(0, int(totalFrames))
-# vidcap.set(cv2.CAP_PROP_POS_FRAMES,randomFrameNumber)
-# success, image = vidcap.read()
-# if success:
-#     img = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-
-# img = imutils.resize(img, height=500)
-# r = cv2.selectROI("Select the LCD area", img)
-# extract_nums(img, r)
-
-
-def plot_data(dict):
-
-    time_values = []
-    force_values = []
-    for time_str, value_str in dict.items():
-        time_values.append(float(time_str))
-        force_values.append(float(value_str))
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(time_values, force_values, marker='x', linestyle='-', color='r', label="Recorded Data")
-    plt.xlabel("Time (seconds)")
-    plt.ylabel("Force (Kgs)")
-    plt.title("Recorded Force over Time")
-    plt.grid(True)
-    plt.legend()
-    plt.show()
-
-def main(path=None):
-    parser = argparse.ArgumentParser(description='Optional app description')
-    parser.add_argument('video_path', type=str,
-                        help='A required integer positional argument')
-    parser.add_argument('--plot', action='store_true',
-                        help='A boolean switch')
-    args = parser.parse_args()
-    path_arg = args.video_path
-    path = path_arg if path_arg else "dyn_video5.mp4"
-    plot_flag = args.plot
+def main(path=None, plot=True):
+    
     cap = cv2.VideoCapture(path)
 
     # f = random.randint(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
@@ -393,77 +354,13 @@ def main(path=None):
     #     w.writerow(records)
     cap.release()
     cv2.destroyAllWindows()
-    if plot_flag:
+    if plot:
         plot_data(records)
     
     exit()
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture("./dyn_video5.mp4")
-
-    # f = random.randint(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-    # cap.set(cv2.CAP_PROP_POS_FRAMES, f)
-    # print(f"Frame {f}") 47
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    succ, img = cap.read()
     
-    # video loop
-    start_time = time.time()
-    records = {}
-    prev_roi_box = np.array([[ 40, 200],
-                             [250, 200],
-                             [250, 350],
-                             [ 40, 350]], dtype=np.float32)
-    prev_record = [0, 0]
-    while True:
-        succ, frame = cap.read()
-        if not succ:
-            print("End of video or cannot read frame")
-            break
-        
-        # img = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-        img = imutils.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), height=500)
-        cv2.imshow('Frame', img)
-
-        roi_box, screen_found = find_LCD_roi(img)
-        if screen_found:
-            screen = cut_LCD_roi(img, roi_box)
-            prev_roi_box = roi_box
-        else:
-            screen = cut_LCD_roi(img, prev_roi_box)
-        
-        n, number_found = extract_nums(screen)
-        if number_found:
-            prev_record = n
-        number = float(f"{prev_record[0]}.{''.join(list(map(str,prev_record[1:])))}")
-        t = time.time()-start_time
-        records[t] = number   
-        # print(f"Frame: {cap.get(cv2.CAP_PROP_POS_FRAMES)}, Number: {number}")
-        # print(f"Frame: {int(cap.get(cv2.CAP_PROP_POS_FRAMES))}, Time: {t%.2}, Number: {number}")
-
-        # while True:
-        #     key = cv2.waitKey(0) & 0xFF
-        #     if key == ord('c'):
-        #         break  # Continue to the next frame
-        #     elif key == ord('q'):
-        #         cap.release()
-        #         cv2.destroyAllWindows()
-        #         exit()  # Exit the program
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-
-    # with open("datafile.csv", "w", newline="") as f:
-    #     w = csv.DictWriter(f, records.keys())
-    #     w.writeheader()
-    #     w.writerow(records)
-    cap.release()
-    cv2.destroyAllWindows()
-    
-    plot_data(records)
-    
-    exit()
-
+    main("./dyn_video5.mp4", True)
     
