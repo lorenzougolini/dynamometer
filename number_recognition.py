@@ -304,10 +304,13 @@ def main(path=None, plot=True):
     # video loop
     start_time = time.time()
     records = {}
-    prev_roi_box = np.array([[ 40, 200],
-                             [250, 200],
-                             [250, 350],
-                             [ 40, 350]], dtype=np.float32)
+    prev_roi_rect = cv2.selectROI("Select the LCD area", img)
+    prev_roi_box = np.array([[prev_roi_rect[0], prev_roi_rect[1]],
+                    [prev_roi_rect[0] + prev_roi_rect[2], prev_roi_rect[1]],
+                    [prev_roi_rect[0] + prev_roi_rect[2], prev_roi_rect[1] + prev_roi_rect[3]],
+                    [prev_roi_rect[0], prev_roi_rect[1] + prev_roi_rect[3]]
+    ], dtype=np.float32)
+    cv2.destroyWindow("Select the LCD area")
     prev_record = [0, 0]
     while True:
         succ, frame = cap.read()
@@ -342,7 +345,7 @@ def main(path=None, plot=True):
         #     elif key == ord('q'):
         #         cap.release()
         #         cv2.destroyAllWindows()
-        #         exit()  # Exit the program
+                # exit()  # Exit the program
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
