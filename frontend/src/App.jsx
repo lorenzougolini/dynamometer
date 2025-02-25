@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from "axios";
 import { useDropzone } from "react-dropzone" ;
 import Graph  from './Graph';
+import API_BASE_URL from './config';
 import './App.css'
 
 function App() {
@@ -23,7 +24,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/upload", formData);
+      const response = await axios.post(`${API_BASE_URL}/upload`, formData);
       const formattedData = Object.entries(response.data.data).map(([time, force]) => ({
         time: parseFloat(time),
         force: parseFloat(force),
