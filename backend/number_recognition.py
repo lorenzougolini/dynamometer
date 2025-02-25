@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import csv
-from data_visualization import plot_data
 
 DIGITS_PATTERNS = {
     (1, 1, 1, 0, 1, 1, 1): 0,
@@ -148,11 +147,11 @@ def find_LCD_roi(img) -> tuple:
     c = max(cnts, key=cv2.contourArea)
     rect = cv2.minAreaRect(c)
     if rect[1][0]*rect[1][1] < 12000:
-        print("Screen not found")
+        # print("Screen not found")
         return None, False
     box = np.array(cv2.boxPoints(rect), dtype=np.float32)
 
-    cv2.imshow("detected lcd box", cv2.drawContours(img.copy(), [box.astype(int)], -1, (0, 255, 0), 2))
+    # cv2.imshow("detected lcd box", cv2.drawContours(img.copy(), [box.astype(int)], -1, (0, 255, 0), 2))
     # cv2.waitKey(0)
     # cv2.destroyWindow("detected lcd box")
 
@@ -189,7 +188,7 @@ def cut_LCD_roi(img, box) -> np.ndarray:
     M = cv2.getPerspectiveTransform(box, dst)
     cropped = imutils.resize(cv2.warpPerspective(img, M, (width, height)), height=300)
 
-    cv2.imshow('Cropped Box', cropped)
+    # cv2.imshow('Cropped Box', cropped)
     # cv2.waitKey(0)
     return cropped
 
@@ -290,7 +289,7 @@ def extract_nums(roi, prev_record) -> tuple:
     boxes = adjust_contours(digitsCnts)
     for (x,y,w,h) in boxes:
         cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    cv2.imshow("Merged Boxes", roi)
+    # cv2.imshow("Merged Boxes", roi)
 
     digits = []
     for i, (x,y,w,h) in enumerate(boxes):
@@ -389,11 +388,11 @@ def main(path=None, plot=True):
     while True:
         succ, img = cap.read()
         if not succ:
-            print("End of video or cannot read frame")
+            # print("End of video or cannot read frame")
             break
         
         img = imutils.resize(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), height=500)
-        cv2.imshow('Frame', img)
+        # cv2.imshow('Frame', img)
 
         roi_box, screen_found = find_LCD_roi(img)
         if screen_found:
@@ -430,10 +429,11 @@ def main(path=None, plot=True):
     #     w.writerow(records)
     cap.release()
     cv2.destroyAllWindows()
-    if plot:
-        plot_data(records)
+    # if plot:
+    #     plot_data(records)
     
-    exit()
+    # exit()
+    return records
 
 
 if __name__ == "__main__":

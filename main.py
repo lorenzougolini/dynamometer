@@ -1,5 +1,5 @@
 import argparse
-import number_recognition
+import backend.number_recognition as number_recognition
 
 def main():
     parser = argparse.ArgumentParser(description='Optional app description')
