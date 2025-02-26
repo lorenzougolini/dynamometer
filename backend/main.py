@@ -6,11 +6,11 @@ import os
 import uuid
 import number_recognition
 
-UPLOAD_FOLDER = '/videos_uploads'
+UPLOAD_FOLDER = '/tmp/videos_uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 CORS(app)
 
 RESULTS = {}
@@ -45,5 +45,6 @@ def upload_video():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", debug=True, port=port)
     
