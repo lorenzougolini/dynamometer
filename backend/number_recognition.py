@@ -405,7 +405,7 @@ def main(path=None, plot=True):
         if number_found:
             prev_record = n
         number = float(f"{prev_record[0]}.{''.join(list(map(str,prev_record[1:])))}")
-        t = time.time()-start_time
+        t = round(time.time()-start_time, 2)
         records[t] = number   
         # print(f"Frame: {cap.get(cv2.CAP_PROP_POS_FRAMES)}, Number: {number}")
         # print(f"Frame: {int(cap.get(cv2.CAP_PROP_POS_FRAMES))}, Time: {t%.2}, Number: {number}")

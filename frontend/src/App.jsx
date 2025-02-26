@@ -38,23 +38,27 @@ function App() {
   };
 
   return (
-    <div className="p-8 flex flex-col items-center">
-      <h1 className="text-xl font-bold mb-4">Dynamometer Analysis</h1>
+    <>
+      <div className="p-8 flex flex-col items-center justify-center min-h-screen">
+        <h1 className="text-xl font-bold mb-4">Leggi il Dinamometro</h1>
 
-      <div {...getRootProps()} className="border-2 border-dashed p-10 cursor-pointer text-center mb-4">
-        <input {...getInputProps()} />
-        {video ? <p>{video.name}</p> : <p>Drag & drop a video or click to upload</p>}
+        <div {...getRootProps()} className="border-2 border-dashed p-10 cursor-pointer text-center mb-4">
+          <input {...getInputProps()} />
+          {video ? <p>{video.name}</p> : <p>Drag & drop oppure clicca per caricare</p>}
+        </div>
+
+        <div className="inline-flex items-center mb-6 p-10">
+          <button onClick={uploadVideo} className="bg-blue-500 text-white px-4 py-2 rounded">
+            Upload & Process
+          </button>
+          {isLoading && <div className="loader ml-4"></div>}
+        </div>
+
       </div>
-
-      <div className="inline-flex items-center mb-6">
-        <button onClick={uploadVideo} className="bg-blue-500 text-white px-4 py-2 rounded">
-          Upload & Process
-        </button>
-        {isLoading && <div className="loader ml-4"></div>}
+      <div className="graph-container">
+        <Graph data={data} />
       </div>
-
-      <Graph data={data} />
-    </div>
+    </>
   )
 }
 
